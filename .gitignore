@@ -1,0 +1,11 @@
+build/
+dist/
+jupyter/
+*.egg-info/
+*.egg
+*.py[cod]
+__pycache__/
+*.so
+*~
+.DS_Store
+.vscode/
