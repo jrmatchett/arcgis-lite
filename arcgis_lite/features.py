@@ -6,7 +6,7 @@ __all__ = ['FeatureLayer', 'geocode']
 
 
 class FeatureLayer:
-    '''ArcGIS Feature Layer'''
+    '''ArcGIS Hosted Feature Layer'''
     def __init__(self, url, gis=None):
         self.url = url
         self.gis = gis
@@ -36,6 +36,7 @@ class FeatureLayer:
         return features
 
     def add_features(self, features):
+        '''Add features'''
         add_result = requests.post(
             self.url + '/addFeatures',
             data={
@@ -47,6 +48,7 @@ class FeatureLayer:
         return add_result
 
     def update_features(self, features):
+        '''Update features'''
         update_result = requests.post(
             self.url + '/updateFeatures',
             data={
@@ -58,6 +60,7 @@ class FeatureLayer:
         return update_result
 
     def delete_features(self, where=None, objectIds=None):
+        '''Delete features'''
         delete_result = requests.post(
             self.url + '/deleteFeatures',
             data={

@@ -1,4 +1,4 @@
-# Lightweight Implimentation of the ArcGIS REST API
+# Lightweight Implementation of the ArcGIS REST API
 
 This package contains code for working with the [ArcGIS REST API](https://developers.arcgis.com/rest/).
 No additional dependencies are required beyond the Python standard library.
@@ -13,4 +13,4 @@ No additional dependencies are required beyond the Python standard library.
 
 * `features` provides classes and methods for querying, creating, updating, and deleting features in a hosted feature layer.
 
-* `requests` includes functions for HTTP GET and POST requests.
+* `requests` includes supporting functions for HTTP GET and POST requests.
