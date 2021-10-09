@@ -1,6 +1,6 @@
 import datetime
 from features import FeatureLayer
-from url_requests import url_get, url_post
+import requests_lite
 
 
 class _GIS:
@@ -16,7 +16,7 @@ class _GIS:
         pass
 
     def feature_layer(self, item_id, layer_number=0):
-        item_data = url_get(
+        item_data = requests_lite.get(
             self.rest_url + '/content/items/' + item_id,
             params={
                 'token': self.token,
@@ -45,7 +45,7 @@ class AgolGIS(_GIS):
     def _get_token(self):
         if not self._token or \
             datetime.datetime.utcnow() > self.token_expiration - datetime.timedelta(minutes=2):
-            token_data = url_post(
+            token_data = requests_lite.post(
                 self.rest_url + '/generateToken',
                 data={
                     'username': self.username,
@@ -69,7 +69,7 @@ class PortalGIS(_GIS):
     def _get_token(self):
         if not self._token or \
             datetime.datetime.utcnow() > self.token_expiration - datetime.timedelta(minutes=2):
-            token_data = url_get(
+            token_data = requests_lite.get(
                 self.rest_url + '/oauth2/token',
                 params={
                     'grant_type': 'refresh_token',

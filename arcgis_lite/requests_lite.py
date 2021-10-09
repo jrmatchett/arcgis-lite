@@ -3,7 +3,7 @@ import urllib.parse
 import json
 
 
-def url_get(url, params):
+def get(url, params):
     url = url.strip('/')
     params = {k:v for k,v in params.items() if v is not None}
     params_encoded = urllib.parse.urlencode(params)
@@ -13,7 +13,7 @@ def url_get(url, params):
     return _check_json(response)
 
 
-def url_post(url, data):
+def post(url, data):
     url = url.strip('/')
     data = {k:v for k,v in data.items() if v is not None}
     data_encoded = urllib.parse.urlencode(data).encode('utf-8')

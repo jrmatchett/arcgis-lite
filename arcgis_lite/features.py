@@ -1,5 +1,5 @@
 import json
-from url_requests import url_get, url_post
+import requests_lite
 
 
 class FeatureLayer:
@@ -21,7 +21,7 @@ class FeatureLayer:
     def _paged_query(self, query_params, features):
         query_params['resultOffset'] = len(features)
         #print(f"query rec start: {query_params['resultOffset']}", flush=True)
-        query_data = url_get(
+        query_data = requests_lite.get(
             self.url + '/query',
             params=query_params
         )
@@ -33,7 +33,7 @@ class FeatureLayer:
         return features
 
     def add_features(self, features):
-        add_result = url_post(
+        add_result = requests_lite.post(
             self.url + '/addFeatures',
             data={
                 'features': json.dumps(features),
@@ -44,7 +44,7 @@ class FeatureLayer:
         return add_result
 
     def update_features(self, features):
-        update_result = url_post(
+        update_result = requests_lite.post(
             self.url + '/updateFeatures',
             data={
                 'features': json.dumps(features),
@@ -55,7 +55,7 @@ class FeatureLayer:
         return update_result
 
     def delete_features(self, where=None, objectIds=None):
-        delete_result = url_post(
+        delete_result = requests_lite.post(
             self.url + '/deleteFeatures',
             data={
                 'where': where,
@@ -86,7 +86,7 @@ def geocode(address, city, state, zipcode=None, county=None, **kwargs):
     }
     query_params.update(kwargs)
     #print(query_params, flush=True)
-    geocode_result = url_get(
+    geocode_result = requests_lite.get(
         'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates',
         query_params
     )
