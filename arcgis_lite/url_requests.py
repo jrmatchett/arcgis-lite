@@ -10,7 +10,7 @@ def url_get(url, params):
     url_params = f"{url}?{params_encoded}"
     with urllib.request.urlopen(url_params) as f:
         response = f.read().decode('utf-8')
-    return json.loads(response)
+    return _check_json(response)
 
 
 def url_post(url, data):
@@ -19,4 +19,12 @@ def url_post(url, data):
     data_encoded = urllib.parse.urlencode(data).encode('utf-8')
     with urllib.request.urlopen(url, data_encoded) as f:
         response = f.read().decode('utf-8')
-    return json.loads(response)
+    return _check_json(response)
+
+
+def _check_json(s):
+    try:
+        r = json.loads(s)
+    except json.decoder.JSONDecodeError:
+        r = None
+    return r if isinstance(r, dict) or isinstance(r, list) else s

@@ -10,11 +10,11 @@ class FeatureLayer:
 
     def query(self, where='1=1', outFields='*', returnGeometry=True, **kwargs):
         '''Query features'''
-        query_params = {k:v for k,v in locals().items() if k not in ['self', 'kwargs']}
-        if kwargs:
-            query_params.update(kwargs)
+        query_params = {'where': where, 'outFields': outFields, 'returnGeometry': returnGeometry}
         query_params['f'] = 'json'
         query_params['token'] = self.token
+        if kwargs:
+            query_params.update(kwargs)
         #print(query_params, flush=True)
         return self._paged_query(query_params, [])
 
@@ -69,3 +69,25 @@ class FeatureLayer:
     @property
     def token(self):
         return self.gis.token if self.gis else None
+
+
+def geocode(address, city, state, zipcode=None, county=None, **kwargs):
+    '''Geocode an address'''
+    query_params = {
+        'address': address,
+        'city': city,
+        'region': state,
+        'postal': zipcode,
+        'subregion': county,
+        'countryCode': 'USA',
+        'maxLocations': 1,
+        'outSR': 4326,
+        'f': 'json'
+    }
+    query_params.update(kwargs)
+    #print(query_params, flush=True)
+    geocode_result = url_get(
+        'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates',
+        query_params
+    )
+    return geocode_result
