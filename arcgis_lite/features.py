@@ -1,5 +1,5 @@
-import requests
 import json
+from url_requests import url_get, url_post
 
 
 class FeatureLayer:
@@ -8,7 +8,7 @@ class FeatureLayer:
         self.url = url
         self.gis = gis
 
-    def query(self, where: str='1=1', outFields: str='*', returnGeometry: bool=True, **kwargs):
+    def query(self, where='1=1', outFields='*', returnGeometry=True, **kwargs):
         '''Query features'''
         query_params = {k:v for k,v in locals().items() if k not in ['self', 'kwargs']}
         if kwargs:
@@ -21,10 +21,10 @@ class FeatureLayer:
     def _paged_query(self, query_params, features):
         query_params['resultOffset'] = len(features)
         #print(f"query rec start: {query_params['resultOffset']}", flush=True)
-        query_data = requests.get(
+        query_data = url_get(
             self.url + '/query',
             params=query_params
-        ).json()
+        )
         if not 'features' in query_data:
             return query_data
         features.extend(query_data['features'])
@@ -33,29 +33,29 @@ class FeatureLayer:
         return features
 
     def add_features(self, features):
-        add_result = requests.post(
+        add_result = url_post(
             self.url + '/addFeatures',
             data={
                 'features': json.dumps(features),
                 'f': 'json',
                 'token': self.token
             }
-        ).json()
+        )
         return add_result
 
     def update_features(self, features):
-        update_result = requests.post(
+        update_result = url_post(
             self.url + '/updateFeatures',
             data={
                 'features': json.dumps(features),
                 'f': 'json',
                 'token': self.token
             }
-        ).json()
+        )
         return update_result
 
     def delete_features(self, where=None, objectIds=None):
-        delete_result = requests.post(
+        delete_result = url_post(
             self.url + '/deleteFeatures',
             data={
                 'where': where,
@@ -63,7 +63,7 @@ class FeatureLayer:
                 'f': 'json',
                 'token': self.token
             }
-        ).json()
+        )
         return delete_result
 
     @property

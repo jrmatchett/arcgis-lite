@@ -1,6 +1,6 @@
 import datetime
-import requests
 from features import FeatureLayer
+from url_requests import url_get, url_post
 
 
 class _GIS:
@@ -16,13 +16,13 @@ class _GIS:
         pass
 
     def feature_layer(self, item_id, layer_number=0):
-        item_data = requests.get(
+        item_data = url_get(
             self.rest_url + '/content/items/' + item_id,
             params={
                 'token': self.token,
                 'f': 'json'
             }
-        ).json()
+        )
         return FeatureLayer(
             item_data['url'] + '/' + str(layer_number),
             self
@@ -45,7 +45,7 @@ class AgolGIS(_GIS):
     def _get_token(self):
         if not self._token or \
             datetime.datetime.utcnow() > self.token_expiration - datetime.timedelta(minutes=2):
-            token_data = requests.post(
+            token_data = url_post(
                 self.rest_url + '/generateToken',
                 data={
                     'username': self.username,
@@ -53,7 +53,7 @@ class AgolGIS(_GIS):
                     'referer': self.url,
                     'f': 'json'
                 }
-            ).json()
+            )
             self._token = token_data['token']
             self.token_expiration = datetime.datetime.utcfromtimestamp(token_data['expires'] / 1000)
 
@@ -69,7 +69,7 @@ class PortalGIS(_GIS):
     def _get_token(self):
         if not self._token or \
             datetime.datetime.utcnow() > self.token_expiration - datetime.timedelta(minutes=2):
-            token_data = requests.get(
+            token_data = url_get(
                 self.rest_url + '/oauth2/token',
                 params={
                     'grant_type': 'refresh_token',
@@ -77,7 +77,7 @@ class PortalGIS(_GIS):
                     'refresh_token': self.refresh_token,
                     'f': 'json'
                 }
-            ).json()
+            )
             self._token = token_data['access_token']
             self.token_expiration = datetime.datetime.utcnow() + datetime.timedelta(seconds=token_data['expires_in'])
             self.username = token_data['username']
