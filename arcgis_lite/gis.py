@@ -1,5 +1,6 @@
 import datetime
 import requests
+from features import FeatureLayer
 
 
 class _GIS:
@@ -13,6 +14,19 @@ class _GIS:
     def _get_token(self):
         # implemented by subclasses
         pass
+
+    def feature_layer(self, item_id, layer_number=0):
+        item_data = requests.get(
+            self.rest_url + '/content/items/' + item_id,
+            params={
+                'token': self.token,
+                'f': 'json'
+            }
+        ).json()
+        return FeatureLayer(
+            item_data['url'] + '/' + str(layer_number),
+            self
+        )
 
     @property
     def token(self):
