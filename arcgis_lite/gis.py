@@ -15,6 +15,7 @@ class _GIS:
         self._token_expiration = None
 
     def feature_layer(self, item_id, layer_number=0):
+        '''Get a layer using its feature service item ID'''
         item_data = requests.get(
             self.rest_url + '/content/items/' + item_id,
             params={
@@ -22,10 +23,7 @@ class _GIS:
                 'f': 'json'
             }
         )
-        return FeatureLayer(
-            item_data['url'] + '/' + str(layer_number),
-            self
-        )
+        return FeatureLayer(item_data['url'] + '/' + str(layer_number), self)
 
     def _request_token(self):
         # implemented by subclasses
