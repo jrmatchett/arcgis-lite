@@ -2,13 +2,13 @@ import json
 from . import requests
 
 
-__all__ = ['FeatureLayer', 'geocode']
+__all__ = ['FeatureLayer']
 
 
 class FeatureLayer:
     '''ArcGIS Hosted Feature Layer'''
     def __init__(self, url, gis=None):
-        self.url = url
+        self.url = url.strip('/')
         self.gis = gis
 
     def query(self, where='1=1', outFields='*', returnGeometry=True, **kwargs):
@@ -18,12 +18,10 @@ class FeatureLayer:
         query_params['token'] = self.token
         if kwargs:
             query_params.update(kwargs)
-        #print(query_params, flush=True)
         return self._paged_query(query_params, [])
 
     def _paged_query(self, query_params, features):
         query_params['resultOffset'] = len(features)
-        #print(f"query rec start: {query_params['resultOffset']}", flush=True)
         query_data = requests.get(
             self.url + '/query',
             params=query_params
@@ -79,25 +77,3 @@ class FeatureLayer:
     @property
     def properties(self):
         return requests.get(self.url, {'f': 'json', 'token': self.token})
-
-
-def geocode(address, city, state, zipcode=None, county=None, **kwargs):
-    '''Geocode an address'''
-    query_params = {
-        'address': address,
-        'city': city,
-        'region': state,
-        'postal': zipcode,
-        'subregion': county,
-        'countryCode': 'USA',
-        'maxLocations': 1,
-        'outSR': 4326,
-        'f': 'json'
-    }
-    query_params.update(kwargs)
-    #print(query_params, flush=True)
-    geocode_result = requests.get(
-        'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates',
-        query_params
-    )
-    return geocode_result
