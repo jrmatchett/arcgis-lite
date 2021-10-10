@@ -76,6 +76,10 @@ class FeatureLayer:
     def token(self):
         return self.gis.token if self.gis else None
 
+    @property
+    def properties(self):
+        return requests.get(self.url, {'f': 'json', 'token': self.token})
+
 
 def geocode(address, city, state, zipcode=None, county=None, **kwargs):
     '''Geocode an address'''

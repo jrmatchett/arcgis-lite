@@ -37,6 +37,11 @@ class _GIS:
         self._get_token()
         return self._token
 
+    @property
+    def properties(self):
+         return requests.get(self.url + '/sharing/rest/portals/self', {'f': 'json', 'token': self.token})
+
+
 
 class AgolGIS(_GIS):
     '''Connection to ArcGIS Online'''
