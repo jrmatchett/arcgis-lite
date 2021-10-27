@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from .features import FeatureLayer
-from . import requests
+from . import _requests
 
 
 __all__ = ['AgolGIS', 'PortalGIS', 'geocode']
@@ -16,7 +16,7 @@ class _GIS:
 
     def feature_layer(self, item_id, layer_number=0):
         '''Get a layer using its feature service item ID'''
-        item_data = requests.get(
+        item_data = _requests.get(
             self.rest_url + '/content/items/' + item_id,
             params={
                 'token': self.token,
@@ -39,7 +39,7 @@ class _GIS:
     @property
     def properties(self):
         '''GIS properties'''
-        return requests.get(self.rest_url + '/portals/self', {'f': 'json', 'token': self.token})
+        return _requests.get(self.rest_url + '/portals/self', {'f': 'json', 'token': self.token})
 
 
 class AgolGIS(_GIS):
@@ -50,7 +50,7 @@ class AgolGIS(_GIS):
         self.password = password
 
     def _request_token(self):
-        token_data = requests.post(
+        token_data = _requests.post(
             self.rest_url + '/generateToken',
             data={
                 'username': self.username,
@@ -71,7 +71,7 @@ class PortalGIS(_GIS):
         self.refresh_token = refresh_token
 
     def _request_token(self):
-        token_data = requests.get(
+        token_data = _requests.get(
             self.rest_url + '/oauth2/token',
             params={
                 'grant_type': 'refresh_token',
@@ -98,7 +98,7 @@ def geocode(address, city, state, zipcode=None, county=None, **kwargs):
         'f': 'json'
     }
     query_params.update(kwargs)
-    geocode_result = requests.get(
+    geocode_result = _requests.get(
         'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates',
         query_params
     )

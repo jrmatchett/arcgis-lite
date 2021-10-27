@@ -1,8 +1,8 @@
 import json
-from . import requests
+from . import _requests
 
 
-__all__ = ['FeatureLayer']
+__all__ = ['FeatureLayer', 'FeatureSet']
 
 
 class FeatureLayer:
@@ -22,20 +22,20 @@ class FeatureLayer:
 
     def _paged_query(self, query_params, features):
         query_params['resultOffset'] = len(features)
-        query_data = requests.get(
+        query_data = _requests.get(
             self.url + '/query',
             params=query_params
         )
         if not 'features' in query_data:
-            return query_data
+            return query_data, None
         features.extend(query_data['features'])
         if 'exceededTransferLimit' in query_data and query_data['exceededTransferLimit']:
             self._paged_query(query_params, features)
-        return features
+        return FeatureSet(query_data, features)
 
     def add_features(self, features):
         '''Add features'''
-        add_result = requests.post(
+        add_result = _requests.post(
             self.url + '/addFeatures',
             data={
                 'features': json.dumps(features),
@@ -47,7 +47,7 @@ class FeatureLayer:
 
     def update_features(self, features):
         '''Update features'''
-        update_result = requests.post(
+        update_result = _requests.post(
             self.url + '/updateFeatures',
             data={
                 'features': json.dumps(features),
@@ -59,7 +59,7 @@ class FeatureLayer:
 
     def delete_features(self, where=None, objectIds=None):
         '''Delete features'''
-        delete_result = requests.post(
+        delete_result = _requests.post(
             self.url + '/deleteFeatures',
             data={
                 'where': where,
@@ -76,4 +76,25 @@ class FeatureLayer:
 
     @property
     def properties(self):
-        return requests.get(self.url, {'f': 'json', 'token': self.token})
+        return _requests.get(self.url, {'f': 'json', 'token': self.token})
+
+
+class FeatureSet:
+    def __init__(self, query_data, features):
+        property_keys = ['geometryType', 'spatialReference']
+        self.properties = {k:v for k,v in query_data.items() if k in property_keys}
+        if features and not 'geometry' in features[0]:
+            del self.properties['geometryType']
+        self.features = features
+
+    def __repr__(self):
+        if 'geometryType' in self.properties:
+            geom_type = self.properties['geometryType'].replace('esriGeometry', '').lower()
+        else:
+            geom_type = 'non-spatial'
+        return f"FeatureSet with {len(self.features)} {geom_type} features"
+
+    @property
+    def gdf(self):
+        from ._geodata import to_GeoDataFrame
+        return to_GeoDataFrame(self)
