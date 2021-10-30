@@ -70,6 +70,20 @@ class FeatureLayer:
         )
         return delete_result
 
+    def truncate_features(self, attachmentOnly=False, asynchronous=False):
+        '''Truncate (delete all) features'''
+        admin_url = self.url.replace('rest/services', 'rest/admin/services')
+        truncate_result = _requests.post(
+            admin_url + '/truncate',
+            data={
+                'attachmentOnly': attachmentOnly,
+                'async': asynchronous,
+                'f': 'json',
+                'token': self.token
+            }
+        )
+        return truncate_result
+
     @property
     def token(self):
         return self.gis.token if self.gis else None
@@ -81,7 +95,7 @@ class FeatureLayer:
 
 class FeatureSet:
     def __init__(self, query_data, features):
-        property_keys = ['geometryType', 'spatialReference']
+        property_keys = ['fields', 'geometryType', 'spatialReference']
         self.properties = {k:v for k,v in query_data.items() if k in property_keys}
         if features and not 'geometry' in features[0]:
             del self.properties['geometryType']
@@ -97,4 +111,4 @@ class FeatureSet:
     @property
     def gdf(self):
         from ._geodata import to_GeoDataFrame
-        return to_GeoDataFrame(self)
+        return to_GeoDataFrame(self, fix_polygons=True)

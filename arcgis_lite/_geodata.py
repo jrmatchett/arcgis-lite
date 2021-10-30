@@ -1,10 +1,14 @@
 import geopandas as gpd
-from shapely.geometry import Point, LinearRing, Polygon, MultiPolygon, LineString, MultiLineString
+from shapely.geometry import Point, MultiPoint, LinearRing, Polygon,\
+    MultiPolygon, LineString, MultiLineString
 from shapely.validation import explain_validity
 import warnings
 
 
-def to_GeoDataFrame(feature_set):
+__all__ = ['to_arcgis_geometry']
+
+
+def to_GeoDataFrame(feature_set, fix_polygons):
     # construct GeoSeries
     if not 'geometry' in feature_set.features[0]:
         geoseries = None
@@ -17,17 +21,24 @@ def to_GeoDataFrame(feature_set):
             [to_shapely_line(f['geometry']) for f in feature_set.features]
         )
     elif feature_set.properties['geometryType'] == 'esriGeometryPolygon':
-        geoseries = [to_shapely_polygon(f['geometry']) for f in feature_set.features]
+        geoseries = gpd.GeoSeries(
+            [to_shapely_polygon(f['geometry'], fix_polygons) for f in feature_set.features]
+        )
     else:
         raise NotImplementedError
     # construct GeoDataFrame
-    return gpd.GeoDataFrame(
+    geodataframe = gpd.GeoDataFrame(
         data=[f['attributes'] for f in feature_set.features],
         geometry=geoseries,
         crs=f"EPSG:{feature_set.properties['spatialReference']['wkid']}" \
-            if 'spatialReference' in feature_set.properties \
+            if 'spatialReference' in feature_set.properties and geoseries is not None\
             else None
     )
+    # convert datetime fields
+    datetime_fields = [f['name'] for f in feature_set.properties['fields'] if f['type'] == 'esriFieldTypeDate']
+    for field in datetime_fields:
+        geodataframe[field] = gpd.pd.to_datetime(geodataframe[field], unit='ms')
+    return geodataframe
 
 
 def to_shapely_line(arcgis_polyline):
@@ -35,17 +46,7 @@ def to_shapely_line(arcgis_polyline):
     return LineString(paths) if len(paths) == 1 else MultiLineString(paths)
 
 
-def to_shapely_polygon(arcgis_polygon, fix_self_intersections=True, warn_invalid=True):
-    """Return a Shapely [Mulit]Polygon.
-
-    Alternative to arcgis as_shapely which handles polygons with holes and fixes
-    self-intersecting rings (as_shapely may not work properly when the python
-    environment does not have ArcPy available).
-
-    Arguments:
-    fix_self_intersections  Fix self-intersecting polygons.
-    warn_invalid            Issue a warning if polygon is invalid.
-    """
+def to_shapely_polygon(arcgis_polygon, fix_polygons):
     # extract exterior and interior rings
     exterior_rings, interior_rings = [], []
     for ring in map(LinearRing, arcgis_polygon['rings']):
@@ -76,13 +77,57 @@ def to_shapely_polygon(arcgis_polygon, fix_self_intersections=True, warn_invalid
     if not poly_shp.is_valid:
         invalid_reason = explain_validity(poly_shp)
         invalid_message = 'Polygon is not valid ({})'.format(invalid_reason)
-        if 'Self-intersection' in invalid_reason and fix_self_intersections:
+        if 'Self-intersection' in invalid_reason and fix_polygons:
             # fix with buffer trick
             poly_shp = poly_shp.buffer(0.0)
             invalid_message += '; self-intersections were automatically fixed'
-        if warn_invalid:
             invalid_message += '.'
             warnings.simplefilter('always', UserWarning)
             warnings.warn(invalid_message)
 
     return poly_shp
+
+
+def tuples_to_lists(tuples):
+    return list(map(tuples_to_lists, tuples)) if isinstance(tuples, (list, tuple)) else tuples
+
+
+def to_arcgis_geometry(geometry, spatial_reference):
+    """Return an arcgis Geometry.
+
+    Arguments:
+    spatial_reference  A spatial reference integer code or definition
+                       dictionary, for example {'wkid': 3857}
+    """
+
+    if isinstance(spatial_reference, int):
+        spatial_reference = {'wkid': spatial_reference}
+
+    if isinstance(geometry, Point):
+        geom = {'x': geometry.x, 'y': geometry.y}
+
+    elif isinstance(geometry, MultiPoint):
+        geom = {'points': tuples_to_lists(geometry.__geo_interface__['coordinates'])}
+
+    elif isinstance(geometry, LineString):
+        geom = {'paths': [tuples_to_lists(geometry.__geo_interface__['coordinates'])]}
+
+    elif isinstance(geometry, MultiLineString):
+        geom = {'paths': tuples_to_lists(geometry.__geo_interface__['coordinates'])}
+
+    elif isinstance(geometry, Polygon):
+        linear_rings = [geometry.exterior]
+        linear_rings += geometry.interiors
+        rings = [tuples_to_lists(r.__geo_interface__['coordinates']) for r in linear_rings]
+        geom = {'rings': rings}
+
+    elif isinstance(geometry, MultiPolygon):
+        linear_rings = []
+        for poly in geometry.geoms:
+            linear_rings += [poly.exterior]
+            linear_rings += poly.interiors
+        rings = [tuples_to_lists(r.__geo_interface__['coordinates']) for r in linear_rings]
+        geom = {'rings': rings}
+
+    geom['spatialReference'] = spatial_reference
+    return geom
