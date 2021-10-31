@@ -1,3 +1,4 @@
+from datetime import datetime
 import geopandas as gpd
 from shapely.geometry import Point, MultiPoint, LinearRing, Polygon,\
     MultiPolygon, LineString, MultiLineString
@@ -128,28 +129,31 @@ def to_arcgis_geometry(geometry, spatial_reference):
         geom = {'rings': rings}
 
     else:
-        warnings.warn(f'Conversion to an ArcGIS geometry type is not supported for {type(geometry)}.')
-        return None
+        warnings.warn(f'Conversion to an ArcGIS geometry type is not supported for {type(geometry)}, using the centroid.')
+        pt = geometry.centroid
+        geom = {'x': pt.x, 'y': pt.y}
 
     geom['spatialReference'] = spatial_reference
     return geom
 
 
-def to_arcgis_feature(f, srid):
+def to_arcgis_feature(f, geom_col, srid):
     feature = {}
     feature['attributes'] = {
-        k: int(v.timestamp() * 1000) if isinstance(v, gpd.pd._libs.tslibs.timestamps.Timestamp) else v \
+        k: int(v.timestamp() * 1000) if isinstance(v, datetime) else v \
         for k, v in f.items() \
-        if k != 'geometry'
+        if k != geom_col
     }
-    if 'geometry' in f:
-        feature['geometry'] = to_arcgis_geometry(f.geometry, srid)
+    if geom_col:
+        feature['geometry'] = to_arcgis_geometry(f[geom_col], srid)
     return feature
 
 
 def arcgis_features(self):
-    srid = self.crs.to_epsg() if 'geometry' in self else None
-    return self.apply(to_arcgis_feature, srid=srid, axis=1).to_list()
+    has_geom = any(self.dtypes.apply(type) == gpd.array.GeometryDtype)
+    geom_col = self.geometry.name if has_geom else None
+    srid = self.crs.to_epsg() if has_geom else None
+    return self.apply(to_arcgis_feature, geom_col=geom_col, srid=srid, axis=1).to_list()
 
 gpd.GeoDataFrame.arcgis_features = property(arcgis_features)
 gpd.pd.DataFrame.arcgis_features = property(arcgis_features)
