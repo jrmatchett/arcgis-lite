@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
+import json
 from .features import FeatureLayer
 from . import _requests
 
 
-__all__ = ['AgolGIS', 'PortalGIS', 'geocode']
+__all__ = ['AgolGIS', 'PortalGIS']
 
 
 class _GIS:
@@ -13,6 +14,11 @@ class _GIS:
         self.rest_url = url + '/sharing/rest'
         self._token = None
         self._token_expiration = None
+        self._geocoder = None
+        self._properties = None
+
+    def __repr__(self):
+        return f"GIS @ {self.url}"
 
     def feature_layer(self, item_id, layer_number=0):
         '''Get a layer using its feature service item ID'''
@@ -29,6 +35,36 @@ class _GIS:
         # implemented by subclasses
         pass
 
+    def geocode(self, full_address=None, **kwargs):
+        '''Geocode a single address. Provide either a single-line address or address components
+        using keywords, such as address, city, region, postal. See findAddressCandidates in the
+        ArcGIS REST API documentation for other accepted parameters.
+        '''
+        query_params = {
+            'maxLocations': 1,
+            'outSR': 4326,
+            'f': 'json',
+            'token': self.token
+        }
+        if full_address:
+            query_params['singleLine'] = full_address
+        query_params.update(kwargs)
+        return _requests.get(self.geocoder + '/findAddressCandidates', query_params)
+
+    def batch_geocode(self, addresses, **kwargs):
+        '''Geocode addresses. Provide a list of single-line addresses. See geocodeAddresses in
+        the ArcGIS REST API documentation for other accepted parameters.
+        '''
+        records = [{'attributes': {'OBJECTID': i, 'singleLine': a}} for i, a in enumerate(addresses)]
+        query_params = {
+            'addresses': json.dumps({'records': records}),
+            'outSR': 4326,
+            'f': 'json',
+            'token': self.token
+        }
+        query_params.update(kwargs)
+        return _requests.get(self.geocoder + '/geocodeAddresses', query_params)
+
     @property
     def token(self):
         '''GIS access token'''
@@ -39,7 +75,26 @@ class _GIS:
     @property
     def properties(self):
         '''GIS properties'''
-        return _requests.get(self.rest_url + '/portals/self', {'f': 'json', 'token': self.token})
+        if not self._properties:
+            self._properties = _requests.get(
+                self.rest_url + '/portals/self',
+                {'f': 'json', 'token': self.token}
+            )
+        return self._properties
+
+    @property
+    def geocoder(self):
+        '''URL of geocoding service'''
+        if not self._geocoder:
+            geocoders = self.properties['helperServices']['geocode']
+            # prefer a geocoder that can batch geocode
+            for geocoder in geocoders:
+                if geocoder['batch']:
+                    self._geocoder = geocoder['url']
+                    break
+                else:
+                    self._geocoder = geocoder['url']
+        return self._geocoder
 
 
 class AgolGIS(_GIS):
@@ -82,24 +137,3 @@ class PortalGIS(_GIS):
         )
         self._token = token_data['access_token']
         self._token_expiration = datetime.utcnow() + timedelta(seconds=token_data['expires_in'])
-
-
-def geocode(address, city, state, zipcode=None, county=None, **kwargs):
-    '''Geocode an address'''
-    query_params = {
-        'address': address,
-        'city': city,
-        'region': state,
-        'postal': zipcode,
-        'subregion': county,
-        'countryCode': 'USA',
-        'maxLocations': 1,
-        'outSR': 4326,
-        'f': 'json'
-    }
-    query_params.update(kwargs)
-    geocode_result = _requests.get(
-        'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates',
-        query_params
-    )
-    return geocode_result

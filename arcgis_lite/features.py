@@ -10,12 +10,20 @@ class FeatureLayer:
     def __init__(self, url, gis=None):
         self.url = url.strip('/')
         self.gis = gis
+        self._properties = None
+
+    def __repr__(self):
+        return f"FeatureLayer @ {self.url}"
 
     def query(self, where='1=1', outFields='*', returnGeometry=True, **kwargs):
         '''Query features'''
-        query_params = {'where': where, 'outFields': outFields, 'returnGeometry': returnGeometry}
-        query_params['f'] = 'json'
-        query_params['token'] = self.token
+        query_params = {
+            'where': where,
+            'outFields': outFields,
+            'returnGeometry': returnGeometry,
+            'f': 'json',
+            'token': self.token
+        }
         if kwargs:
             query_params.update(kwargs)
         return self._paged_query(query_params, [])
@@ -90,10 +98,13 @@ class FeatureLayer:
 
     @property
     def properties(self):
-        return _requests.get(self.url, {'f': 'json', 'token': self.token})
+        if not self._properties:
+            self._properties = _requests.get(self.url, {'f': 'json', 'token': self.token})
+        return self._properties
 
 
 class FeatureSet:
+    '''ArcGIS Feature Set'''
     def __init__(self, query_data, features):
         property_keys = ['fields', 'geometryType', 'spatialReference']
         self.properties = {k:v for k,v in query_data.items() if k in property_keys}
@@ -110,5 +121,6 @@ class FeatureSet:
 
     @property
     def gdf(self):
+        '''Get a GeoPandas GeoDataFrame'''
         from ._geodata import to_geodataframe
         return to_geodataframe(self, fix_polygons=True)
