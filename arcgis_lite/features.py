@@ -110,5 +110,5 @@ class FeatureSet:
 
     @property
     def gdf(self):
-        from ._geodata import to_GeoDataFrame
-        return to_GeoDataFrame(self, fix_polygons=True)
+        from ._geodata import to_geodataframe
+        return to_geodataframe(self, fix_polygons=True)

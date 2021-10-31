@@ -5,10 +5,7 @@ from shapely.validation import explain_validity
 import warnings
 
 
-__all__ = ['to_arcgis_geometry']
-
-
-def to_GeoDataFrame(feature_set, fix_polygons):
+def to_geodataframe(feature_set, fix_polygons):
     # construct GeoSeries
     if not 'geometry' in feature_set.features[0]:
         geoseries = None
@@ -89,6 +86,7 @@ def to_shapely_polygon(arcgis_polygon, fix_polygons):
 
 
 def tuples_to_lists(tuples):
+    # converts nested tuples to nested lists
     return list(map(tuples_to_lists, tuples)) if isinstance(tuples, (list, tuple)) else tuples
 
 
@@ -129,5 +127,29 @@ def to_arcgis_geometry(geometry, spatial_reference):
         rings = [tuples_to_lists(r.__geo_interface__['coordinates']) for r in linear_rings]
         geom = {'rings': rings}
 
+    else:
+        warnings.warn(f'Conversion to an ArcGIS geometry type is not supported for {type(geometry)}.')
+        return None
+
     geom['spatialReference'] = spatial_reference
     return geom
+
+
+def to_arcgis_feature(f, srid):
+    feature = {}
+    feature['attributes'] = {
+        k: int(v.timestamp() * 1000) if isinstance(v, gpd.pd._libs.tslibs.timestamps.Timestamp) else v \
+        for k, v in f.items() \
+        if k != 'geometry'
+    }
+    if 'geometry' in f:
+        feature['geometry'] = to_arcgis_geometry(f.geometry, srid)
+    return feature
+
+
+def arcgis_features(self):
+    srid = self.crs.to_epsg() if 'geometry' in self else None
+    return self.apply(to_arcgis_feature, srid=srid, axis=1).to_list()
+
+gpd.GeoDataFrame.arcgis_features = property(arcgis_features)
+gpd.pd.DataFrame.arcgis_features = property(arcgis_features)
