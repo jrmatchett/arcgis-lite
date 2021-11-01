@@ -117,7 +117,8 @@ class FeatureSet:
             geom_type = self.properties['geometryType'].replace('esriGeometry', '').lower()
         else:
             geom_type = 'non-spatial'
-        return f"FeatureSet with {len(self.features)} {geom_type} features"
+        n_features = len(self.features)
+        return f"FeatureSet with {n_features} {geom_type} feature{'s' if n_features != 1 else ''}"
 
     @property
     def gdf(self):

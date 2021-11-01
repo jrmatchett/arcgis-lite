@@ -25,6 +25,8 @@ setup(
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Scientific/Engineering :: GIS'
     ],
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
