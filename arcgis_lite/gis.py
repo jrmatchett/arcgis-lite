@@ -120,10 +120,34 @@ class AgolGIS(_GIS):
 
 class PortalGIS(_GIS):
     '''Connection to ArcGIS Enterprise Portal'''
-    def __init__(self, url, client_id, refresh_token):
+    def __init__(self, url, client_id, refresh_token=None):
         super().__init__(url)
         self.client_id = client_id
-        self.refresh_token = refresh_token
+        if refresh_token:
+            self.refresh_token = refresh_token
+        else:
+            import webbrowser
+            from urllib.parse import urlencode
+            params = {
+                'client_id': client_id,
+                'response_type': 'code',
+                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+                'expiration': 1440
+            }
+            auth_url = self.rest_url + '/oauth2/authorize?' + urlencode(params)
+            webbrowser.open(auth_url)
+            auth_code = input('Enter Approval Code: ')
+            data = {
+                'client_id': client_id,
+                'grant_type': 'authorization_code',
+                'code': auth_code,
+                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+                'f': 'json'
+            }
+            auth_response = _requests.post(self.rest_url + '/oauth2/token', data)
+            self._token = auth_response['access_token']
+            self.refresh_token = auth_response['refresh_token']
+            self._token_expiration = datetime.utcnow() + timedelta(seconds=auth_response['expires_in'])
 
     def _request_token(self):
         token_data = _requests.get(
