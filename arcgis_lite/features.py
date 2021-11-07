@@ -24,8 +24,7 @@ class FeatureLayer:
             'f': 'json',
             'token': self.token
         }
-        if kwargs:
-            query_params.update(kwargs)
+        query_params.update(kwargs)
         return self._paged_query(query_params, [])
 
     def _paged_query(self, query_params, features):

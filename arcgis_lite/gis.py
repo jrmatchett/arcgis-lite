@@ -37,8 +37,8 @@ class _GIS:
 
     def geocode(self, full_address=None, **kwargs):
         '''Geocode a single address. Provide either a single-line address or address components
-        using keywords, such as address, city, region, postal. See findAddressCandidates in the
-        ArcGIS REST API documentation for other accepted parameters.
+        using the API keywords, such as address, city, region, postal. See findAddressCandidates
+         in the ArcGIS REST API documentation for accepted parameters.
         '''
         query_params = {
             'maxLocations': 1,
@@ -53,17 +53,17 @@ class _GIS:
 
     def batch_geocode(self, addresses, **kwargs):
         '''Geocode addresses. Provide a list of single-line addresses. See geocodeAddresses in
-        the ArcGIS REST API documentation for other accepted parameters.
+        the ArcGIS REST API documentation for accepted parameters.
         '''
         records = [{'attributes': {'OBJECTID': i, 'singleLine': a}} for i, a in enumerate(addresses)]
-        query_params = {
+        data = {
             'addresses': json.dumps({'records': records}),
             'outSR': 4326,
             'f': 'json',
             'token': self.token
         }
-        query_params.update(kwargs)
-        return _requests.get(self.geocoder + '/geocodeAddresses', query_params)
+        data.update(kwargs)
+        return _requests.post(self.geocoder + '/geocodeAddresses', data)
 
     @property
     def token(self):
