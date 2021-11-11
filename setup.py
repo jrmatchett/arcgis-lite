@@ -31,6 +31,9 @@ setup(
     ],
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[],
+    extras_requires={
+        'geodata': ['geopandas']
+    },
     python_requires='~=3.7',
     project_urls={
         'Bug Reports': 'https://github.com/jrmatchett/arcgis-lite/issues',

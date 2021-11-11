@@ -27,6 +27,8 @@ def _string_value(x):
         return ''
     elif isinstance(x, bool):
         return str(x).lower()
+    elif isinstance(x, list) or isinstance(x, dict):
+        return json.dumps(x)
     else:
         return str(x)
 

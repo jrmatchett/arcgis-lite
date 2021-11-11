@@ -1,4 +1,4 @@
-# Lightweight Implementation of the ArcGIS REST API
+# Lightweight Python Implementation of the ArcGIS REST API
 
 This package contains tools for working with the [ArcGIS REST API](https://developers.arcgis.com/rest/).
 It is primarily focused on managing data in hosted feature layers and is designed to be minimal in size,
