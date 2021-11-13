@@ -137,10 +137,19 @@ def to_arcgis_geometry(geometry, spatial_reference):
     return geom
 
 
+def to_arcgis_value(v):
+    if gpd.pd.isnull(v):
+        return None
+    elif isinstance(v, datetime):
+        return int(v.timestamp() * 1000)
+    else:
+        return v
+
+
 def to_arcgis_feature(f, geom_col, srid):
     feature = {}
     feature['attributes'] = {
-        k: int(v.timestamp() * 1000) if isinstance(v, datetime) else v \
+        k: to_arcgis_value(v) \
         for k, v in f.items() \
         if k != geom_col
     }

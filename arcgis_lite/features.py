@@ -1,4 +1,3 @@
-import json
 from . import _requests
 
 
@@ -45,7 +44,7 @@ class FeatureLayer:
         add_result = _requests.post(
             self.url + '/addFeatures',
             data={
-                'features': json.dumps(features),
+                'features': features,
                 'f': 'json',
                 'token': self.token
             }
@@ -57,7 +56,7 @@ class FeatureLayer:
         update_result = _requests.post(
             self.url + '/updateFeatures',
             data={
-                'features': json.dumps(features),
+                'features': features,
                 'f': 'json',
                 'token': self.token
             }
@@ -93,7 +92,7 @@ class FeatureLayer:
 
     @property
     def token(self):
-        return self.gis.token if self.gis else None
+        return self.gis.token if self.gis else ''
 
     @property
     def properties(self):

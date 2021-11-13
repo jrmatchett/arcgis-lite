@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import json
 from .features import FeatureLayer
 from . import _requests
 
@@ -57,7 +56,7 @@ class _GIS:
         '''
         records = [{'attributes': {'OBJECTID': i, 'singleLine': a}} for i, a in enumerate(addresses)]
         data = {
-            'addresses': json.dumps({'records': records}),
+            'addresses': {'records': records},
             'outSR': 4326,
             'f': 'json',
             'token': self.token

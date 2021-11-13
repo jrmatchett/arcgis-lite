@@ -5,35 +5,28 @@ import urllib.parse
 
 def get(url, params):
     url = url.strip('/')
-    params = {k: _string_value(v) for k,v in params.items()}
+    params = {k: string_valu(v) for k,v in params.items()}
     params_encoded = urllib.parse.urlencode(params)
     url_params = f"{url}?{params_encoded}"
     with urllib.request.urlopen(url_params) as f:
         response = f.read().decode('utf-8')
-    return _check_json(response)
+    return check_json(response)
 
 
 def post(url, data):
     url = url.strip('/')
-    data = {k: _string_value(v) for k,v in data.items()}
+    data = {k: string_valu(v) for k,v in data.items()}
     data_encoded = urllib.parse.urlencode(data).encode('utf-8')
     with urllib.request.urlopen(url, data_encoded) as f:
         response = f.read().decode('utf-8')
-    return _check_json(response)
+    return check_json(response)
 
 
-def _string_value(x):
-    if x is None:
-        return ''
-    elif isinstance(x, bool):
-        return str(x).lower()
-    elif isinstance(x, list) or isinstance(x, dict):
-        return json.dumps(x)
-    else:
-        return str(x)
+def string_valu(x):
+    return x if isinstance(x, str) else json.dumps(x, separators=(',', ':'))
 
 
-def _check_json(s):
+def check_json(s):
     try:
         r = json.loads(s)
     except json.decoder.JSONDecodeError:
