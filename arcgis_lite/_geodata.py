@@ -12,15 +12,24 @@ def to_geodataframe(feature_set, fix_polygons):
         geoseries = None
     elif feature_set.properties['geometryType'] == 'esriGeometryPoint':
         geoseries = gpd.GeoSeries(
-            [Point(f['geometry']['x'], f['geometry']['y']) for f in feature_set.features]
+            [
+                Point(f['geometry']['x'], f['geometry']['y']) if f['geometry'] else Point()\
+                for f in feature_set.features
+            ]
         )
     elif feature_set.properties['geometryType'] == 'esriGeometryPolyline':
         geoseries = gpd.GeoSeries(
-            [to_shapely_line(f['geometry']) for f in feature_set.features]
+            [
+                to_shapely_line(f['geometry']) if f['geometry'] else LineString()\
+                for f in feature_set.features
+            ]
         )
     elif feature_set.properties['geometryType'] == 'esriGeometryPolygon':
         geoseries = gpd.GeoSeries(
-            [to_shapely_polygon(f['geometry'], fix_polygons) for f in feature_set.features]
+            [
+                to_shapely_polygon(f['geometry'], fix_polygons) if f['geometry'] else Polygon()\
+                for f in feature_set.features
+            ]
         )
     else:
         raise NotImplementedError
@@ -98,6 +107,8 @@ def to_arcgis_geometry(geometry, spatial_reference):
     spatial_reference  A spatial reference integer code or definition
                        dictionary, for example {'wkid': 3857}
     """
+    if geometry.is_empty:
+        return None
 
     if isinstance(spatial_reference, int):
         spatial_reference = {'wkid': spatial_reference}
