@@ -87,9 +87,7 @@ def to_shapely_polygon(arcgis_polygon, fix_polygons):
         if 'Self-intersection' in invalid_reason and fix_polygons:
             # fix with buffer trick
             poly_shp = poly_shp.buffer(0.0)
-            invalid_message += '; self-intersections were automatically fixed'
-            invalid_message += '.'
-            warnings.simplefilter('always', UserWarning)
+            invalid_message += '; self-intersections were automatically fixed.'
             warnings.warn(invalid_message)
 
     return poly_shp
