@@ -106,7 +106,7 @@ class FeatureSet:
     def __init__(self, query_data, features):
         property_keys = ['fields', 'geometryType', 'spatialReference']
         self.properties = {k:v for k,v in query_data.items() if k in property_keys}
-        if features and not 'geometry' in features[0]:
+        if features and 'geometryType' in self.properties and not 'geometry' in features[0]:
             del self.properties['geometryType']
         self.features = features
 
@@ -117,6 +117,26 @@ class FeatureSet:
             geom_type = 'non-spatial'
         n_features = len(self.features)
         return f"FeatureSet with {n_features} {geom_type} feature{'s' if n_features != 1 else ''}"
+
+    def geodataframe(self, decode_domains=True, use_aliases=False):
+        """Returns a feature set's data as a GeoPandas GeoDataFrame, decoding any domain values by
+        default and optionally using field aliases for the dataframe column names.
+        Arguments:
+        decode_domains  If True, replaces domain codes with their values.
+        use_aliases     If True, uses field aliases for the dataframe column names.
+        """
+        gdf = self.gdf
+        fields = self.properties['fields']
+        if decode_domains:
+            gdf_columns = gdf.columns
+            for f in fields:
+                if ('domain' in f) and (f['domain'] is not None) and (f['name'] in gdf_columns):
+                    code_values = {k:v for k,v in [(d['code'], d['name']) for d in f['domain']['codedValues']]}
+                    gdf[f['name']].replace(code_values, inplace=True)
+        if use_aliases:
+            field_aliases = {k:v for k,v in [(f['name'], f['alias']) for f in fields]}
+            gdf.rename(columns=field_aliases, inplace=True)
+        return gdf
 
     @property
     def gdf(self):
