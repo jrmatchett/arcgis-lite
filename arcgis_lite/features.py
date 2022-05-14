@@ -37,7 +37,7 @@ class FeatureLayer:
         features.extend(query_data['features'])
         if 'exceededTransferLimit' in query_data and query_data['exceededTransferLimit']:
             self._paged_query(query_params, features)
-        return FeatureSet(query_data, features)
+        return FeatureSet(self, query_data, features)
 
     def add_features(self, features):
         '''Add features'''
@@ -103,9 +103,14 @@ class FeatureLayer:
 
 class FeatureSet:
     '''ArcGIS Feature Set'''
-    def __init__(self, query_data, features):
+    def __init__(self, layer, query_data, features):
         property_keys = ['fields', 'geometryType', 'spatialReference']
         self.properties = {k:v for k,v in query_data.items() if k in property_keys}
+        # add field domain information from feature layer
+        layer_field_domains = {f['name']: f['domain'] for f in layer.properties['fields'] if 'domain' in f and f['domain']}
+        for f in self.properties['fields']:
+            if f['name'] in layer_field_domains:
+                f['domain'] = layer_field_domains[f['name']]
         if features and 'geometryType' in self.properties and not 'geometry' in features[0]:
             del self.properties['geometryType']
         self.features = features
@@ -130,7 +135,7 @@ class FeatureSet:
         if decode_domains:
             gdf_columns = gdf.columns
             for f in fields:
-                if ('domain' in f) and (f['domain'] is not None) and (f['name'] in gdf_columns):
+                if ('domain' in f) and (f['domain']['type'] == 'codedValue') and (f['name'] in gdf_columns):
                     code_values = {k:v for k,v in [(d['code'], d['name']) for d in f['domain']['codedValues']]}
                     gdf[f['name']].replace(code_values, inplace=True)
         if use_aliases:

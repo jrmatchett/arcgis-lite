@@ -50,7 +50,7 @@ def to_geodataframe(feature_set, fix_polygons):
 
 def to_shapely_line(arcgis_polyline):
     paths = arcgis_polyline['paths']
-    return LineString(paths) if len(paths) == 1 else MultiLineString(paths)
+    return LineString(paths[0]) if len(paths) == 1 else MultiLineString(paths)
 
 
 def to_shapely_polygon(arcgis_polygon, fix_polygons):
