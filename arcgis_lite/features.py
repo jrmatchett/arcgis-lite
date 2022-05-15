@@ -106,13 +106,14 @@ class FeatureSet:
     def __init__(self, layer, query_data, features):
         property_keys = ['fields', 'geometryType', 'spatialReference']
         self.properties = {k:v for k,v in query_data.items() if k in property_keys}
-        # add field domain information from feature layer
-        layer_field_domains = {f['name']: f['domain'] for f in layer.properties['fields'] if 'domain' in f and f['domain']}
-        for f in self.properties['fields']:
-            if f['name'] in layer_field_domains:
-                f['domain'] = layer_field_domains[f['name']]
-        if features and 'geometryType' in self.properties and not 'geometry' in features[0]:
-            del self.properties['geometryType']
+        if features:
+            # add field domain information from feature layer
+            layer_field_domains = {f['name']: f['domain'] for f in layer.properties['fields'] if 'domain' in f and f['domain']}
+            for f in self.properties['fields']:
+                if f['name'] in layer_field_domains:
+                    f['domain'] = layer_field_domains[f['name']]
+            if 'geometryType' in self.properties and not 'geometry' in features[0]:
+                del self.properties['geometryType']
         self.features = features
 
     def __repr__(self):

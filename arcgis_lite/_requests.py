@@ -5,7 +5,7 @@ import urllib.parse
 
 def get(url, params):
     url = url.strip('/')
-    params = {k: string_valu(v) for k,v in params.items()}
+    params = {k: string_valu(v) for k,v in params.items() if v}
     params_encoded = urllib.parse.urlencode(params)
     url_params = f"{url}?{params_encoded}"
     with urllib.request.urlopen(url_params) as f:
@@ -15,7 +15,7 @@ def get(url, params):
 
 def post(url, data):
     url = url.strip('/')
-    data = {k: string_valu(v) for k,v in data.items()}
+    data = {k: string_valu(v) for k,v in data.items() if v}
     data_encoded = urllib.parse.urlencode(data).encode('utf-8')
     with urllib.request.urlopen(url, data_encoded) as f:
         response = f.read().decode('utf-8')
