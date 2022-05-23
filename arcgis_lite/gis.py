@@ -64,6 +64,19 @@ class _GIS:
         data.update(kwargs)
         return _requests.post(self.geocoder + '/geocodeAddresses', data)
 
+    def reverse_geocode(self, x, y=None, **kwargs):
+        '''Reverse geocode a single point. Provide either longitude and latitude coordinates or
+        an ArcGIS point geometry dictionary. See reverseGeocode in the ArcGIS REST API documentation
+        for other accepted parameters.
+        '''
+        query_params = {
+            'location': x if isinstance(x, dict) else f'{x},{y}',
+            'f': 'json',
+            'token': self.token
+        }
+        query_params.update(kwargs)
+        return _requests.get(self.geocoder + '/reverseGeocode', query_params)
+
     @property
     def token(self):
         '''GIS access token'''

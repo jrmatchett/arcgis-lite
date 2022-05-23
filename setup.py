@@ -15,7 +15,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='arcgis_lite',
-    version='0.1.2',
+    version='0.1.3',
     description='Lightweight implementation of the ArcGIS REST API',
     long_description=long_description,
     long_description_content_type='text/markdown',
