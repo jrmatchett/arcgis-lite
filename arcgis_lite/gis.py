@@ -3,18 +3,31 @@ from .features import FeatureLayer
 from . import _requests
 
 
-__all__ = ['AgolGIS', 'PortalGIS']
+__all__ = ['GIS']
 
 
-class _GIS:
-    '''Abstract GIS superclass'''
-    def __init__(self, url):
+class GIS:
+    '''Connection to an ArcGIS portal'''
+    def __init__(self,
+        url='https://www.arcgis.com',
+        username=None, password=None,
+        client_id=None, client_secret=None,
+        refresh_token=None
+    ):
+        self.username = username
+        self.password = password
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.refresh_token = refresh_token
         self.url = url.strip('/')
-        self.rest_url = url + '/sharing/rest'
+        self.rest_url = self.url + '/sharing/rest'
         self._token = None
         self._token_expiration = None
         self._geocoder = None
         self._properties = None
+
+        if client_id and not client_secret and not refresh_token:
+            self._request_token()
 
     def __repr__(self):
         return f"GIS @ {self.url}"
@@ -31,8 +44,72 @@ class _GIS:
         return FeatureLayer(item_data['url'] + '/' + str(layer_number), self)
 
     def _request_token(self):
-        # implemented by subclasses
-        pass
+        if self.username and self.password:
+            token_data = _requests.post(
+                self.rest_url + '/generateToken',
+                data={
+                    'username': self.username,
+                    'password': self.password,
+                    'referer': self.url,
+                    'f': 'json'
+                }
+            )
+            self._token = token_data['token']
+            self._token_expiration = datetime.utcfromtimestamp(int(token_data['expires'] / 1000))
+
+        elif self.client_id and not self.client_secret and not self.refresh_token:
+            import webbrowser
+            from urllib.parse import urlencode
+            params = {
+                'client_id': self.client_id,
+                'response_type': 'code',
+                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+                'expiration': 1440
+            }
+            auth_url = self.rest_url + '/oauth2/authorize?' + urlencode(params)
+            webbrowser.open(auth_url)
+            auth_code = input('Enter Approval Code: ')
+            data = {
+                'client_id': self.client_id,
+                'grant_type': 'authorization_code',
+                'code': auth_code,
+                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+                'f': 'json'
+            }
+            auth_response = _requests.post(self.rest_url + '/oauth2/token', data)
+            self._token = auth_response['access_token']
+            self.refresh_token = auth_response['refresh_token']
+            self._token_expiration = datetime.utcnow() + timedelta(seconds=auth_response['expires_in'])
+
+        elif self.client_id and self.client_secret:
+            token_data = _requests.post(
+                self.rest_url + '/oauth2/token',
+                data={
+                    'client_id': self.client_id,
+                    'client_secret': self.client_secret,
+                    'grant_type': 'client_credentials',
+                    'f': 'json'
+                }
+            )
+            self._token = token_data['access_token']
+            self._token_expiration = datetime.utcnow() + timedelta(seconds=token_data['expires_in'])
+
+        elif self.client_id and self.refresh_token:
+            token_data = _requests.post(
+                self.rest_url + '/oauth2/token',
+                data={
+                    'client_id': self.client_id,
+                    'grant_type': 'refresh_token',
+                    'refresh_token': self.refresh_token,
+                    'f': 'json'
+                }
+            )
+            self._token = token_data['access_token']
+            self._token_expiration = datetime.utcnow() + timedelta(seconds=token_data['expires_in'])
+
+        else:
+            raise RuntimeError('Credentials are incomplete. Provide either a combination of username'\
+                '/password, client_id/client_secret, or client_id/refresh_token')
 
     def geocode(self, full_address=None, **kwargs):
         '''Geocode a single address. Provide either a single-line address or address components
@@ -107,69 +184,3 @@ class _GIS:
                 else:
                     self._geocoder = geocoder['url']
         return self._geocoder
-
-
-class AgolGIS(_GIS):
-    '''Connection to ArcGIS Online'''
-    def __init__(self, username, password, url='https://www.arcgis.com'):
-        super().__init__(url)
-        self.username = username
-        self.password = password
-
-    def _request_token(self):
-        token_data = _requests.post(
-            self.rest_url + '/generateToken',
-            data={
-                'username': self.username,
-                'password': self.password,
-                'referer': self.url,
-                'f': 'json'
-            }
-        )
-        self._token = token_data['token']
-        self._token_expiration = datetime.utcfromtimestamp(int(token_data['expires'] / 1000))
-
-
-class PortalGIS(_GIS):
-    '''Connection to ArcGIS Enterprise Portal'''
-    def __init__(self, url, client_id, refresh_token=None):
-        super().__init__(url)
-        self.client_id = client_id
-        if refresh_token:
-            self.refresh_token = refresh_token
-        else:
-            import webbrowser
-            from urllib.parse import urlencode
-            params = {
-                'client_id': client_id,
-                'response_type': 'code',
-                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
-                'expiration': 1440
-            }
-            auth_url = self.rest_url + '/oauth2/authorize?' + urlencode(params)
-            webbrowser.open(auth_url)
-            auth_code = input('Enter Approval Code: ')
-            data = {
-                'client_id': client_id,
-                'grant_type': 'authorization_code',
-                'code': auth_code,
-                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
-                'f': 'json'
-            }
-            auth_response = _requests.post(self.rest_url + '/oauth2/token', data)
-            self._token = auth_response['access_token']
-            self.refresh_token = auth_response['refresh_token']
-            self._token_expiration = datetime.utcnow() + timedelta(seconds=auth_response['expires_in'])
-
-    def _request_token(self):
-        token_data = _requests.get(
-            self.rest_url + '/oauth2/token',
-            params={
-                'grant_type': 'refresh_token',
-                'client_id': self.client_id,
-                'refresh_token': self.refresh_token,
-                'f': 'json'
-            }
-        )
-        self._token = token_data['access_token']
-        self._token_expiration = datetime.utcnow() + timedelta(seconds=token_data['expires_in'])

@@ -15,14 +15,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='arcgis_lite',
-    version='0.1.3',
+    version='1.0.0',
     description='Lightweight implementation of the ArcGIS REST API',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='J. R. Matchett',
     author_email='jrmatchett@me.com',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
