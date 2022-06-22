@@ -12,13 +12,15 @@ class GIS:
         url='https://www.arcgis.com',
         username=None, password=None,
         client_id=None, client_secret=None,
-        refresh_token=None
+        refresh_token=None,
+        refresh_expiration=20160
     ):
         self.username = username
         self.password = password
         self.client_id = client_id
         self.client_secret = client_secret
         self.refresh_token = refresh_token
+        self.refresh_expiration = refresh_expiration
         self.url = url.strip('/')
         self.rest_url = self.url + '/sharing/rest'
         self._token = None
@@ -63,8 +65,7 @@ class GIS:
             params = {
                 'client_id': self.client_id,
                 'response_type': 'code',
-                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
-                'expiration': 1440
+                'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob'
             }
             auth_url = self.rest_url + '/oauth2/authorize?' + urlencode(params)
             webbrowser.open(auth_url)
@@ -74,6 +75,7 @@ class GIS:
                 'grant_type': 'authorization_code',
                 'code': auth_code,
                 'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob',
+                'expiration': self.refresh_expiration,
                 'f': 'json'
             }
             auth_response = _requests.post(self.rest_url + '/oauth2/token', data)
