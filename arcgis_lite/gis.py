@@ -137,11 +137,20 @@ class GIS:
         data = {
             'addresses': {'records': records},
             'outSR': 4326,
+            'outFields': 'Addr_type',
             'f': 'json',
             'token': self.token
         }
         data.update(kwargs)
-        return _requests.post(self.geocoder + '/geocodeAddresses', data)
+        geocodes = _requests.post(self.geocoder + '/geocodeAddresses', data)
+        for gc in geocodes['locations']:
+            record = records[gc['attributes']['ResultID']]
+            record['attributes']['match_address'] = gc['address']
+            record['attributes']['search_address'] = record['attributes'].pop('singleLine')
+            record['attributes'].update(gc['attributes'])
+            record['geometry'] = gc['location']
+            record['geometry']['spatialReference'] = geocodes['spatialReference']
+        return records
 
     def reverse_geocode(self, x, y=None, **kwargs):
         '''Reverse geocode a single point. Provide either longitude and latitude coordinates or
