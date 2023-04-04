@@ -148,8 +148,11 @@ class GIS:
             record['attributes']['match_address'] = gc['address']
             record['attributes']['search_address'] = record['attributes'].pop('singleLine')
             record['attributes'].update(gc['attributes'])
-            record['geometry'] = gc['location']
-            record['geometry']['spatialReference'] = geocodes['spatialReference']
+            if 'location' in gc:
+                record['geometry'] = gc['location']
+                record['geometry']['spatialReference'] = geocodes['spatialReference']
+            else:
+                record['geometry'] = None
         return records
 
     def reverse_geocode(self, x, y=None, **kwargs):

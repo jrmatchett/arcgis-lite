@@ -28,15 +28,19 @@ class FeatureLayer:
 
     def _paged_query(self, query_params, features):
         query_params['resultOffset'] = len(features)
-        query_data = _requests.get(
+        query_data = _requests.post(
             self.url + '/query',
-            params=query_params
+            data=query_params
         )
         if not 'features' in query_data:
             return query_data, None
         features.extend(query_data['features'])
         if 'exceededTransferLimit' in query_data and query_data['exceededTransferLimit']:
             self._paged_query(query_params, features)
+        if 'returnCentroid' in query_params and query_params['returnCentroid']:
+            query_data['geometryType'] = 'esriGeometryPoint'
+            for f in features:
+                f['geometry'] = f.pop('centroid')
         return FeatureSet(self, query_data, features)
 
     def add_features(self, features):
@@ -92,7 +96,7 @@ class FeatureLayer:
 
     @property
     def token(self):
-        return self.gis.token if self.gis else ''
+        return self.gis.token if self.gis else None
 
     @property
     def properties(self):
